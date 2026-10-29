@@ -154,3 +154,32 @@ def test_cannot_sell_sold_lot() -> None:
 
     assert lot.status == LotStatus.SOLD
     assert lot.client == "Ivan Gromov"
+
+
+def test_lots_with_same_number_are_equal() -> None:
+    lot_1 = Lot(number="101", price=17_000_000, rooms=3)
+    lot_2 = Lot(number="101", price=15_000_000, rooms=3)
+
+    assert lot_1 == lot_2
+
+
+def test_lots_with_different_number_are_not_equal() -> None:
+    lot_1 = Lot(number="101", price=17_000_000, rooms=3)
+    lot_2 = Lot(number="102", price=17_000_000, rooms=3)
+
+    assert lot_1 != lot_2
+
+
+def test_set_keeps_one_lot_per_number() -> None:
+    lot_1 = Lot(number="101", price=17_000_000, rooms=3)
+    lot_2 = Lot(number="101", price=15_000_000, rooms=3)
+
+    lots = {lot_1, lot_2}
+
+    assert len(lots) == 1
+
+
+def test_lot_is_not_equal_to_its_number() -> None:
+    lot_1 = Lot(number="101", price=17_000_000, rooms=3)
+
+    assert lot_1 != lot_1.number

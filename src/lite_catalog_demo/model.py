@@ -26,6 +26,15 @@ class Lot:
         self.client: str | None = None
         self.status: LotStatus = LotStatus.AVAILABLE
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Lot):
+            return NotImplemented
+
+        return other.number == self.number
+
+    def __hash__(self) -> int:
+        return hash(self.number)
+
     def book(self, client: str) -> None:
         if self.status != LotStatus.AVAILABLE:
             raise LotUnavailable(f"Лот {self.number} недоступен")
