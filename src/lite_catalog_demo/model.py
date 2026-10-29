@@ -15,6 +15,7 @@ class BookingNotFound(Exception):
 class LotStatus(StrEnum):
     BOOKED = "booked"
     AVAILABLE = "available"
+    SOLD = "sold"
 
 
 class Lot:
@@ -33,8 +34,17 @@ class Lot:
         self.client = client
 
     def cancel_booking(self, client: str) -> None:
-        if self.status != LotStatus.BOOKED or client != self.client:
+        if not self._is_booked_by(client):
             raise BookingNotFound(client=client, number=self.number)
 
         self.status = LotStatus.AVAILABLE
         self.client = None
+
+    def sell(self, client: str) -> None:
+        if not self._is_booked_by(client):
+            raise BookingNotFound(client=client, number=self.number)
+
+        self.status = LotStatus.SOLD
+
+    def _is_booked_by(self, client: str) -> bool:
+        return self.status == LotStatus.BOOKED and client == self.client
