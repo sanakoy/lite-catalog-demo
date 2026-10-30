@@ -15,7 +15,7 @@ class BookingNotFound(Exception):
 class NoSuitableLot(Exception):
     def __init__(self, client: str, max_price: int, rooms: int) -> None:
         super().__init__(
-            f"На нашелся свободный лот для клиента {client} с максимальной ценой {max_price} и комнатностью {rooms}"
+            f"Не нашелся свободный лот для клиента {client} с максимальной ценой {max_price} и комнатностью {rooms}"
         )
         self.client = client
         self.max_price = max_price
