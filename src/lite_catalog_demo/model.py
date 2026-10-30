@@ -12,6 +12,16 @@ class BookingNotFound(Exception):
         self.number = number
 
 
+class NoSuitableLot(Exception):
+    def __init__(self, client: str, max_price: int, rooms: int) -> None:
+        super().__init__(
+            f"На нашелся свободный лот для клиента {client} с максимальной ценой {max_price} и комнатностью {rooms}"
+        )
+        self.client = client
+        self.max_price = max_price
+        self.rooms = rooms
+
+
 class LotStatus(StrEnum):
     BOOKED = "booked"
     AVAILABLE = "available"
@@ -36,7 +46,7 @@ class Lot:
         return hash(self.number)
 
     def book(self, client: str) -> None:
-        if self.status != LotStatus.AVAILABLE:
+        if not self.can_be_booked():
             raise LotUnavailable(f"Лот {self.number} недоступен")
 
         self.status = LotStatus.BOOKED
@@ -55,5 +65,22 @@ class Lot:
 
         self.status = LotStatus.SOLD
 
+    def can_be_booked(self) -> bool:
+        return self.status == LotStatus.AVAILABLE
+
     def _is_booked_by(self, client: str) -> bool:
         return self.status == LotStatus.BOOKED and client == self.client
+
+
+def book_cheapest(lots: list[Lot], max_price: int, rooms: int, client: str) -> str:
+    suitable_lots = [
+        lot
+        for lot in lots
+        if lot.price <= max_price and lot.rooms == rooms and lot.can_be_booked()
+    ]
+    if not suitable_lots:
+        raise NoSuitableLot(client=client, max_price=max_price, rooms=rooms)
+
+    cheapest_lot = min(suitable_lots, key=lambda lot: lot.price)
+    cheapest_lot.book(client)
+    return cheapest_lot.number
