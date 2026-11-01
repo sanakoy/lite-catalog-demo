@@ -22,6 +22,12 @@ class NoSuitableLot(Exception):
         self.rooms = rooms
 
 
+class LotNotFound(Exception):
+    def __init__(self, number: str) -> None:
+        super().__init__(f"Лот с номером {number} не найден")
+        self.number = number
+
+
 class LotStatus(StrEnum):
     BOOKED = "booked"
     AVAILABLE = "available"
