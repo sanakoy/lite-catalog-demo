@@ -15,6 +15,10 @@ class AbstractRepository(ABC):
     def add(self, lot: Lot) -> None:
         raise NotImplementedError
 
+    @abstractmethod
+    def list_all(self) -> list[Lot]:
+        raise NotImplementedError
+
 
 class SQLAlchemyRepository(AbstractRepository):
     def __init__(self, session: Session):
@@ -29,3 +33,6 @@ class SQLAlchemyRepository(AbstractRepository):
 
     def add(self, lot: Lot) -> None:
         self.session.add(lot)
+
+    def list_all(self) -> list[Lot]:
+        return list(self.session.scalars(select(Lot)))

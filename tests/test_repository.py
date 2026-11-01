@@ -108,3 +108,26 @@ def test_repository_add_does_not_commit(session: Session) -> None:
     ).all()
 
     assert len(received_rows) == 0
+
+
+def test_repository_list_all_lots(session: Session) -> None:
+    insert_lots(session)
+
+    repo = SQLAlchemyRepository(session)
+    received_lots = repo.list_all()
+
+    expected_rows = get_test_rows()
+    sorted_received_lots = sorted(received_lots, key=lambda lot: lot.number)
+    assert [
+        {
+            "number": lot.number,
+            "price": lot.price,
+            "rooms": lot.rooms,
+            "status": lot.status,
+            "client": lot.client,
+        }
+        for lot in sorted_received_lots
+    ] == expected_rows
+
+    for lot in received_lots:
+        assert isinstance(lot, Lot)
