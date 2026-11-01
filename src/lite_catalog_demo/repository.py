@@ -11,6 +11,10 @@ class AbstractRepository(ABC):
     def get(self, number: str) -> Lot:
         raise NotImplementedError
 
+    @abstractmethod
+    def add(self, lot: Lot) -> None:
+        raise NotImplementedError
+
 
 class SQLAlchemyRepository(AbstractRepository):
     def __init__(self, session: Session):
@@ -22,3 +26,6 @@ class SQLAlchemyRepository(AbstractRepository):
         if lot is None:
             raise LotNotFound(number=number)
         return lot
+
+    def add(self, lot: Lot) -> None:
+        self.session.add(lot)
