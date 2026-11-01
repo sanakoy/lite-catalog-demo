@@ -1,4 +1,6 @@
+import pytest
 from sqlalchemy import select, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from lite_catalog_demo.model import Lot, LotStatus
@@ -105,3 +107,18 @@ def test_lot_mapper_can_save_lots(session: Session) -> None:
         }
         for row in received_rows
     ] == expected_rows
+
+
+def test_lot_mapper_cannot_save_same_number_lots(session: Session) -> None:
+    lot = Lot(number="101", price=17_000_000, rooms=3)
+    duplicate_lot = Lot(number="101", price=16_000_000, rooms=2)
+
+    session.add(lot)
+    session.commit()
+    session.add(duplicate_lot)
+
+    with pytest.raises(IntegrityError, match="UNIQUE constraint failed: lots.number"):
+        session.commit()
+    session.rollback()
+
+    assert len(session.scalars(select(Lot)).all()) == 1
