@@ -3,7 +3,33 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from lite_catalog_demo.model import Lot, LotNotFound, LotStatus
-from lite_catalog_demo.repository import SQLAlchemyRepository
+from lite_catalog_demo.repository import AbstractRepository, SQLAlchemyRepository
+
+
+class FakeRepository(AbstractRepository):
+    def __init__(self) -> None:
+        self.lots: list[Lot] = []
+
+    def get(self, number: str) -> Lot:
+        for lot in self.lots:
+            if lot.number == number:
+                return lot
+        raise LotNotFound(number=number)
+
+    def add(self, lot: Lot) -> None:
+        if lot in self.lots:
+            raise ValueError(f"Лот с номером {lot.number} уже существует")
+        self.lots.append(lot)
+
+    def list_all(self) -> list[Lot]:
+        return list(self.lots)
+
+
+@pytest.fixture(params=["sqlalchemy", "fake"])
+def repo(request: pytest.FixtureRequest) -> AbstractRepository:
+    if request.param == "sqlalchemy":
+        return SQLAlchemyRepository(request.getfixturevalue("session"))
+    return FakeRepository()
 
 
 def get_test_rows() -> list[dict[str, object]]:
@@ -55,14 +81,6 @@ def test_repository_can_get_lot(session: Session) -> None:
     assert received_lot.rooms == 2
     assert received_lot.status == LotStatus.SOLD
     assert received_lot.client == "Artem Volkov"
-
-
-def test_repository_raises_when_lot_not_found(session: Session) -> None:
-    insert_lots(session)
-
-    repo = SQLAlchemyRepository(session)
-    with pytest.raises(LotNotFound, match="999"):
-        repo.get("999")
 
 
 def test_repository_can_add_lot(session: Session) -> None:
@@ -131,3 +149,46 @@ def test_repository_list_all_lots(session: Session) -> None:
 
     for lot in received_lots:
         assert isinstance(lot, Lot)
+
+
+def test_repository_lists_added_lot(repo: AbstractRepository) -> None:
+    lot_1 = Lot(number="101", price=17_000_000, rooms=3)
+    lot_2 = Lot(number="102", price=14_000_000, rooms=2)
+    lot_3 = Lot(number="103", price=14_000_000, rooms=2)
+
+    expected_lots = [lot_1, lot_2, lot_3]
+
+    for lot in expected_lots:
+        repo.add(lot)
+
+    received_lots = repo.list_all()
+    sorted_lots = sorted(received_lots, key=lambda lot: lot.number)
+
+    assert expected_lots == sorted_lots
+
+
+def test_repository_get_added_lot(repo: AbstractRepository) -> None:
+    lot_1 = Lot(number="101", price=17_000_000, rooms=3)
+    lot_2 = Lot(number="102", price=14_000_000, rooms=2)
+    lot_3 = Lot(number="103", price=14_000_000, rooms=2)
+
+    expected_lots = [lot_1, lot_2, lot_3]
+
+    for lot in expected_lots:
+        repo.add(lot)
+
+    received_lot_1 = repo.get("101")
+    received_lot_2 = repo.get("102")
+    received_lot_3 = repo.get("103")
+
+    assert received_lot_1 is lot_1
+    assert received_lot_2 is lot_2
+    assert received_lot_3 is lot_3
+
+
+def test_repository_get_raises_not_found(repo: AbstractRepository) -> None:
+    lot = Lot(number="101", price=17_000_000, rooms=3)
+    repo.add(lot)
+
+    with pytest.raises(LotNotFound, match="999"):
+        repo.get("999")
